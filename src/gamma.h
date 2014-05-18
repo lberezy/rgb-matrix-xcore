@@ -37,7 +37,7 @@ static const uint8_t _gamma2[] = {
   0x0d,0x0d,0x0d,0x0d,0x0d,0x0e,0x0e,0x0e,
   0x0e,0x0e,0x0e,0x0e,0x0f,0x0f,0x0f,0x0f
 };
-
+/*
 static const uint8_t _gamma[] = {
 #if RESOLUTION_BITS == 1
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -129,7 +129,7 @@ static const uint8_t _gamma[] = {
   22,  23,  23,  23,  23,  24,  24,  24,  24,  25,  25,  25,  26,  26,  26,  26,
   27,  27,  27,  27,  28,  28,  28,  29,  29,  29,  30,  30,  30,  30,  31,  31
 #endif
-};
+};*/
 
 
 #endif /* GAMMA_H_ */
