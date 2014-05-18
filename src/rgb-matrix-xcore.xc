@@ -51,9 +51,10 @@
 
 int main() {
 	interface display disp;
-	par {
-		display_server(disp); // thread 1
+	par {	/* just testing to see if declaration order changes transaction priorities - it shouldn't and doesn't */
 		display_client(disp); // thread 2
+		display_server(disp); // thread 1
+
 	}
     return 0;
 }
@@ -63,13 +64,16 @@ int main() {
 
 void display_server(server interface display disp) {
 	pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT];
+	timer t;
+	uint32_t time;
+	const uint32_t delay = 500;
 	ABCD_port   <: 0;
 	CLK_port    <: 0;
 	LAT_port    <: 0;
 	OE_port     <: 1;
 	// Init frame buffers (all pixels black)
 	memset(framebuffer, 0, sizeof framebuffer);
-
+	t :> time;
 	while(1) {
 		select {
 			case disp.setPixel(const uint8_t x, const uint8_t y, const pixel_t pixel):
@@ -79,7 +83,9 @@ void display_server(server interface display disp) {
 				pixel = framebuffer[y][x];
 				break;
 
-			default:
+			case t when timerafter(time) :> void :
+			//default:
+				time += delay;
 				refreshDisplay(framebuffer);
 				break;
 		}
@@ -97,40 +103,45 @@ void display_client(client interface display disp) {
 	long        hueShift =  0;
 
 	while (1) {
-		int x1, x2, x3, x4, y1, y2, y3, y4, sx1, sx2, sx3, sx4;
-		uint8_t x, y;
-		long value;
+		select {
+			default:
+				int x1, x2, x3, x4, y1, y2, y3, y4, sx1, sx2, sx3, sx4;
+				uint8_t x, y;
+				long value;
 
-		sx1 = (int)(cos(angle1) * radius1 + centerx1);
-		sx2 = (int)(cos(angle2) * radius2 + centerx2);
-		sx3 = (int)(cos(angle3) * radius3 + centerx3);
-		sx4 = (int)(cos(angle4) * radius4 + centerx4);
-		y1  = (int)(sin(angle1) * radius1 + centery1);
-		y2  = (int)(sin(angle2) * radius2 + centery2);
-		y3  = (int)(sin(angle3) * radius3 + centery3);
-		y4  = (int)(sin(angle4) * radius4 + centery4);
+				sx1 = (int)(cos(angle1) * radius1 + centerx1);
+				sx2 = (int)(cos(angle2) * radius2 + centerx2);
+				sx3 = (int)(cos(angle3) * radius3 + centerx3);
+				sx4 = (int)(cos(angle4) * radius4 + centerx4);
+				y1  = (int)(sin(angle1) * radius1 + centery1);
+				y2  = (int)(sin(angle2) * radius2 + centery2);
+				y3  = (int)(sin(angle3) * radius3 + centery3);
+				y4  = (int)(sin(angle4) * radius4 + centery4);
 
-		for(y = 0; y < 32; y++) {
-			x1 = sx1; x2 = sx2; x3 = sx3; x4 = sx4;
-			for(x = 0; x < 32; x++) {
-				value = hueShift
-					+ (int8_t)(sinetab + (uint8_t)((x1 * x1 + y1 * y1) >> 2))
-					+ (int8_t)(sinetab + (uint8_t)((x2 * x2 + y2 * y2) >> 2))
-					+ (int8_t)(sinetab + (uint8_t)((x3 * x3 + y3 * y3) >> 3))
-					+ (int8_t)(sinetab + (uint8_t)((x4 * x4 + y4 * y4) >> 3));
-				disp.setPixel(x, y, ColorHSV(3 * value , 255, 255));
+				for(y = 0; y < 32; y++) {
+					x1 = sx1; x2 = sx2; x3 = sx3; x4 = sx4;
+					for(x = 0; x < 32; x++) {
+						value = hueShift
+							+ (int8_t)(sinetab + (uint8_t)((x1 * x1 + y1 * y1) >> 2))
+							+ (int8_t)(sinetab + (uint8_t)((x2 * x2 + y2 * y2) >> 2))
+							+ (int8_t)(sinetab + (uint8_t)((x3 * x3 + y3 * y3) >> 3))
+							+ (int8_t)(sinetab + (uint8_t)((x4 * x4 + y4 * y4) >> 3));
+						disp.setPixel(x, y, ColorHSV(3 * value , 255, 255));
 
-				x1--; x2--; x3--; x4--;
-			}
+						x1--; x2--; x3--; x4--;
+					}
 
-			y1--; y2--; y3--; y4--;
+					y1--; y2--; y3--; y4--;
 
+				}
+				//angle1 += 0.03;
+				//angle2 -= 0.07;
+				//angle3 += 0.03;
+				//angle4 -= 0.15;
+				hueShift += 1;
+				break;
 		}
-		//angle1 += 0.03;
-		//angle2 -= 0.07;
-		//angle3 += 0.03;
-		//angle4 -= 0.15;
-		hueShift += 1;
+
 	}
 }
 
@@ -146,7 +157,6 @@ void refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 		}
 		for (uint8_t bit = 0; bit < RESOLUTION_BITS; bit++) { // at each bit level
 			uint8_t mask = (1 << bit);
-			OE_port <: 0; // assert blanking signal
 
 			for (uint8_t col = 0; col < 32; col++) { // clock in row of data at bit level
 				uint8_t output =  ((rowB[col].b & mask ) << 5) | ((rowB[col].g & mask ) << 4) | ((rowB[col].r & mask ) << 3) | ((rowA[col].b & mask ) << 2) | ((rowA[col].g & mask ) << 1) | ((rowA[col].r & mask ) << 0);
@@ -157,10 +167,11 @@ void refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 			ABCD_port <: row; // send address
 			LAT_port <: 1; // latch data in
 			LAT_port <: 0;
-			OE_port <: 1; // deassert blanking signal
+			OE_port <: 0; // deassert blanking signal
 			delay_microseconds(WAIT_PERIOD * (1 << (bit))); /* wait time increases as 2^bit */
 			//delay_microseconds(WAIT_PERIOD * wait);
-			//OE_port <: 0; // assert blanking signal
+			OE_port <: 1; // assert blanking signal
+
 
 
 		}

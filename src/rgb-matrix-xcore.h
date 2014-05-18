@@ -9,7 +9,7 @@
 #define RGB_MATRIX_XCORE_H_
 
 
-#define RESOLUTION_BITS 1
+#define RESOLUTION_BITS 2
 #define WAIT_PERIOD 5
 #define USE_GAMMA 1
 #define PANEL_WIDTH 32
