@@ -54,7 +54,6 @@ int main() {
 	par {	
 		display_client(disp); 
 		[[distribute]]display_server(disp);
-
 	}
 	return 0;
 }
@@ -164,9 +163,6 @@ void inline refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 			delay_microseconds(WAIT_PERIOD * (1 << (bit))); /* wait time increases as 2^bit */
 			//delay_microseconds(WAIT_PERIOD * wait);
 			OE_port <: 1; // assert blanking signal
-
-
-
 		}
 	}
 }
@@ -179,7 +175,7 @@ Written by Limor Fried/Ladyada & Phil Burgess/PaintYourDragon for
 Adafruit Industries.
 BSD license, all text above must be included in any redistribution.
 */
-pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
+inline pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
 
 	uint8_t  r, g, b, lo;
 	uint16_t s1, v1;
