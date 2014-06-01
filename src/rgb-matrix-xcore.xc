@@ -14,7 +14,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "./gamma.h"
+#include "gamma.h"
 #include "rgb-matrix-xcore.h"
 
 /**
@@ -51,9 +51,9 @@
 
 int main() {
 	interface display disp;
-	par {	/* just testing to see if declaration order changes transaction priorities - it shouldn't and doesn't */
-		display_client(disp); // thread 2
-		[[distribute]]display_server(disp); // thread 1
+	par {	
+		display_client(disp); 
+		[[distribute]]display_server(disp);
 
 	}
 	return 0;
