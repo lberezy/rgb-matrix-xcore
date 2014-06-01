@@ -9,7 +9,7 @@
 #define RGB_MATRIX_XCORE_H_
 
 
-#define RESOLUTION_BITS 2
+#define RESOLUTION_BITS 1
 #define WAIT_PERIOD 5
 #define USE_GAMMA 1
 #define PANEL_WIDTH 32
@@ -23,15 +23,16 @@ typedef struct {
 } pixel_t;
 
 interface display {
-     void setPixel(const uint8_t x, const uint8_t y, const pixel_t pixel);
-     pixel_t getPixel(const uint8_t x, const uint8_t y);
+	void refresh();
+	void setPixel(const uint8_t x, const uint8_t y, const pixel_t pixel);
+  pixel_t getPixel(const uint8_t x, const uint8_t y);
 };
 
 void refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]);
 pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val);
 void setPixel( uint8_t x, uint8_t y, const pixel_t pixel);
 pixel_t getPixel(const uint8_t x, const uint8_t y);
-void display_server(server interface display disp);
+[[distributable]]void display_server(server interface display disp);
 void display_client(client interface display disp);
 
 
