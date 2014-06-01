@@ -64,16 +64,11 @@ int main() {
 [[distributable]]
 void display_server(server interface display disp) {
 	pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT];
-	//timer t;
-	//uint32_t time;
-	//const uint32_t delay = 20;
 	ABCD_port   <: 0;
 	CLK_port    <: 0;
 	LAT_port    <: 0;
 	OE_port     <: 1;
-	// Init frame buffers (all pixels black)
 	memset(framebuffer, 0, sizeof framebuffer);
-	//t :> time;
 	while(1) {
 		select {
 			case disp.refresh():
