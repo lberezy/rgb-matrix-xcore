@@ -51,42 +51,33 @@
 
 int main() {
 	interface display disp;
-	par {	/* just testing to see if declaration order changes transaction priorities - it shouldn't and doesn't */
-		display_client(disp); // thread 2
-		display_server(disp); // thread 1
-
+	par {	
+		display_client(disp); 
+		[[distribute]]display_server(disp);
 	}
-    return 0;
+	return 0;
 }
 
 
 
-
+[[distributable]]
 void display_server(server interface display disp) {
 	pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT];
-	timer t;
-	uint32_t time;
-	const uint32_t delay = 500;
 	ABCD_port   <: 0;
 	CLK_port    <: 0;
 	LAT_port    <: 0;
 	OE_port     <: 1;
-	// Init frame buffers (all pixels black)
 	memset(framebuffer, 0, sizeof framebuffer);
-	t :> time;
 	while(1) {
 		select {
+			case disp.refresh():
+				refreshDisplay(framebuffer);
+				break;
 			case disp.setPixel(const uint8_t x, const uint8_t y, const pixel_t pixel):
 				framebuffer[y][x] = pixel;
 				break;
 			case disp.getPixel(const uint8_t x, const uint8_t y) -> pixel_t pixel:
 				pixel = framebuffer[y][x];
-				break;
-
-			case t when timerafter(time) :> void :
-			//default:
-				time += delay;
-				refreshDisplay(framebuffer);
 				break;
 		}
 	}
@@ -134,18 +125,19 @@ void display_client(client interface display disp) {
 					y1--; y2--; y3--; y4--;
 
 				}
+				disp.refresh();
 				//angle1 += 0.03;
 				//angle2 -= 0.07;
-				//angle3 += 0.03;
+				angle3 += 0.03;
 				//angle4 -= 0.15;
-				hueShift += 1;
+				hueShift += 0.1;
 				break;
 		}
 
 	}
 }
 
-void refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
+void inline refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 
 	for (uint8_t row = 0; row < 16; row ++) { // for each row
 		pixel_t* rowA = framebuffer[row];
@@ -171,9 +163,6 @@ void refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 			delay_microseconds(WAIT_PERIOD * (1 << (bit))); /* wait time increases as 2^bit */
 			//delay_microseconds(WAIT_PERIOD * wait);
 			OE_port <: 1; // assert blanking signal
-
-
-
 		}
 	}
 }
@@ -186,7 +175,7 @@ Written by Limor Fried/Ladyada & Phil Burgess/PaintYourDragon for
 Adafruit Industries.
 BSD license, all text above must be included in any redistribution.
 */
-pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
+inline pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
 
 	uint8_t  r, g, b, lo;
 	uint16_t s1, v1;
@@ -231,3 +220,4 @@ pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
 	output.b = b;
 	return output;
 }
+
