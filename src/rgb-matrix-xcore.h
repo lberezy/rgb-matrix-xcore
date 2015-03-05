@@ -9,8 +9,8 @@
 #define RGB_MATRIX_XCORE_H_
 
 
-#define RESOLUTION_BITS 1
-#define WAIT_PERIOD 5
+#define RESOLUTION_BITS 8
+#define WAIT_PERIOD 2
 #define USE_GAMMA 1
 #define PANEL_WIDTH 32
 #define PANEL_HEIGHT 32
@@ -24,6 +24,7 @@ typedef struct {
 
 interface display {
 	void refresh();
+	//void updateBuffer();
 	void setPixel(const uint8_t x, const uint8_t y, const pixel_t pixel);
   pixel_t getPixel(const uint8_t x, const uint8_t y);
 };

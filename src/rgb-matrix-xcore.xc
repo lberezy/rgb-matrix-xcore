@@ -14,8 +14,10 @@
 #include <string.h>
 #include <math.h>
 
+
 #include "gamma.h"
 #include "rgb-matrix-xcore.h"
+
 
 /**
  * Wiring
@@ -50,6 +52,7 @@
 
 
 int main() {
+    srand(123);
 	interface display disp;
 	par {	
 		display_client(disp); 
@@ -67,7 +70,7 @@ void display_server(server interface display disp) {
 	CLK_port    <: 0;
 	LAT_port    <: 0;
 	OE_port     <: 1;
-	memset(framebuffer, 0, sizeof framebuffer);
+	memset(framebuffer, 0, sizeof(pixel_t) * PANEL_WIDTH * PANEL_HEIGHT);
 	while(1) {
 		select {
 			case disp.refresh():
@@ -79,6 +82,7 @@ void display_server(server interface display disp) {
 			case disp.getPixel(const uint8_t x, const uint8_t y) -> pixel_t pixel:
 				pixel = framebuffer[y][x];
 				break;
+
 		}
 	}
 }
@@ -93,10 +97,15 @@ void display_client(client interface display disp) {
 	float       angle1   =  0.0, angle2   =  0.0, angle3   =  0.0, angle4   =  0.0;
 	long        hueShift =  0;
 
+
 	while (1) {
 		select {
+		    /*case disp.updateBuffer():
+		            break;
+*/
 			default:
-				int x1, x2, x3, x4, y1, y2, y3, y4, sx1, sx2, sx3, sx4;
+
+			    int x1, x2, x3, x4, y1, y2, y3, y4, sx1, sx2, sx3, sx4;
 				uint8_t x, y;
 				long value;
 
@@ -125,12 +134,17 @@ void display_client(client interface display disp) {
 					y1--; y2--; y3--; y4--;
 
 				}
-				disp.refresh();
-				//angle1 += 0.03;
-				//angle2 -= 0.07;
+
+				angle1 += 0.01;
+				angle2 -= 0.02;
 				angle3 += 0.03;
-				//angle4 -= 0.15;
-				hueShift += 0.1;
+				angle4 -= 0.04;
+				//hueShift += 0.1;*/
+			    pixel_t p;
+
+
+                disp.refresh();
+
 				break;
 		}
 
@@ -147,21 +161,22 @@ void inline refreshDisplay(pixel_t framebuffer[PANEL_WIDTH][PANEL_HEIGHT]) {
 			LAT_port <: 1; // latch data in
 			LAT_port <: 0;
 		}
-		for (uint8_t bit = 0; bit < RESOLUTION_BITS; bit++) { // at each bit level
-			uint8_t mask = (1 << bit);
+		ABCD_port <: row; // send address
+	    for (uint8_t bit = 0; bit < RESOLUTION_BITS; bit++) { // at each bit level
 
-			for (uint8_t col = 0; col < 32; col++) { // clock in row of data at bit level
-				uint8_t output =  ((rowB[col].b & mask ) << 5) | ((rowB[col].g & mask ) << 4) | ((rowB[col].r & mask ) << 3) | ((rowA[col].b & mask ) << 2) | ((rowA[col].g & mask ) << 1) | ((rowA[col].r & mask ) << 0);
+	        uint8_t mask = (1 << bit);
+
+			for (uint8_t col = 0; col < PANEL_HEIGHT; col++) { // clock in row of data at bit level
+				uint8_t output =  (!!(rowB[col].b & mask ) << 5) | (!!(rowB[col].g & mask ) << 4) | (!!(rowB[col].r & mask ) << 3) | (!!(rowA[col].b & mask ) << 2) | (!!(rowA[col].g & mask ) << 1) | (!!(rowA[col].r & mask) << 0);
 				RGB_port <: output;
 				CLK_port <: 0;
 				CLK_port <: 1;
 			}
-			ABCD_port <: row; // send address
+
 			LAT_port <: 1; // latch data in
 			LAT_port <: 0;
 			OE_port <: 0; // deassert blanking signal
 			delay_microseconds(WAIT_PERIOD * (1 << (bit))); /* wait time increases as 2^bit */
-			//delay_microseconds(WAIT_PERIOD * wait);
 			OE_port <: 1; // assert blanking signal
 		}
 	}
@@ -206,18 +221,15 @@ inline pixel_t ColorHSV(long hue, uint8_t sat, uint8_t val) {
 	// to allow shifts, and upgrade to int makes other conversions implicit.
 	v1 = val + 1;
 	if(USE_GAMMA) { // Gamma-corrected color
-		r = _gamma2[(r * v1) >> 8]; // Gamma correction table maps
-		g = _gamma2[(g * v1) >> 8]; // 8-bit input to 4-bit output
-		b = _gamma2[(b * v1) >> 8];
+		output.r = _gamma2[(r * v1) >> 8]; // Gamma correction table maps
+		output.g = _gamma2[(g * v1) >> 8]; // 8-bit input to 4-bit output
+		output.b = _gamma2[(b * v1) >> 8];
 	} else { // linear (uncorrected) color
-		r = (r * v1) >> 8;
-		g = (g * v1) >> 8;
-		b = (b * v1) >> 8;
+	    output.r = (r * v1) >> 8;
+	    output.g = (g * v1) >> 8;
+	    output.b = (b * v1) >> 8;
 	}
 
-	output.r = r;
-	output.g = g;
-	output.b = b;
 	return output;
 }
 
